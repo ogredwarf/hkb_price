@@ -168,8 +168,8 @@
 
 
             if (wb) {
-                var bontType = document.getElementById('bondType');
-                var sheet = wb.Sheets[bontType.value]; // 첫번째 시트
+                var bondType = document.getElementById('bondType');
+                var sheet = wb.Sheets[bondType.value]; // 첫번째 시트
 
                 var data = [], ohlc=[], volume=[], // set the allowed units for data grouping
                     groupingUnits = [ [
@@ -179,7 +179,7 @@
                         'month',
                         [1, 2, 3, 4, 6]
                     ] ];
-                //$('#displayExcelTitle').html( bontType.value);
+                //$('#displayExcelTitle').html( bondType.value);
                 //$("#displayExcelHtml").html(JSON.stringify(XLSX.utils.sheet_to_json (sheet, {header:1, range:2})));
 
                 let xlsData = XLSX.utils.sheet_to_json(sheet, {header: 1, range: 2});
@@ -228,7 +228,7 @@
                     },
 
                     title: {
-                        text: bontType.value + ' Historical'
+                        text: bondType.value + ' Historical'
                     },
 
                     yAxis: [{
@@ -264,8 +264,8 @@
 
                     series: [{
                         type: 'candlestick',
-                        name: 'KS',
-                        id: 'KS',
+                        name: bondType.value,
+                        id: bondType.value,
                         data: ohlc,
                         dataGrouping: {
                             units: groupingUnits
