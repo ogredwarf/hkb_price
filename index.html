@@ -1,38 +1,317 @@
 <!doctype html>
 <html lang="ko">
+
 <head>
-	<meta charset="utf-8">
-	<title>HTML5 기본 구성</title>
-	<meta name="author" content="webskills.kr">
-	<meta name="description" content="hkb_excel_import">
-	<meta name="keywords" content="HTML, CSS, XML, XHTML, JavaScript">
-	<!--[if lt IE 9]>
+    <meta charset="utf-8">
+    <title>HTML5 기본 구성</title>
+    <meta name="author" content="webskills.kr">
+    <meta name="description" content="hkb_excel_import">
+    <meta name="keywords" content="HTML, CSS, XML, XHTML, JavaScript">
+    <!--[if lt IE 9]>
 	<script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
     <!-- 합쳐지고 최소화된 최신 CSS -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
-
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.10/css/select2.min.css" rel="stylesheet" />
 </head>
+
 <body>
     <h1> 엑셀 임포트 페이지 입니다. </h1>
-    <div>
-        <div>
-            <label for="excelFile">파일</label>
-            <input type="file" class="form-control-file" id="excelFile" onchange="excelExport(this)"/>
-        </div>
-        <div>
-            <label for="bondType">통화</label>
-            <select id="bondType" class="form-control  select2" style="width: 100%;" data-select2-id="1"
-                    tabindex="-1" aria-hidden="true">
-            </select>
-        </div>
-        <div>
+    <section>
+        <!--조회-->
+        <div class="box">
+            <div class="box-header with-border">
+                <h3 class="box-title">조회</h3>
+                <div class="box-tools pull-right">
+                    <!-- Collapse Button -->
+                    <button type="button" class="btn btn-box-tool" data-widget="collapse">
+                        <i class="fa fa-minus"></i>
+                    </button>
+                </div>
+                <!-- /.box-tools -->
+            </div>
+            <div class="box-body">
+                <div class="form-group">
+                    <label for="excelFile">파일</label>
+                    <input type="file" class="form-control-file" id="excelFile" onchange="excelExport(this)" />
+                </div>
+                <div class="form-group">
+                    <label for="bondType">통화</label>
+                    <select id="bondType" class="form-control  select2" style="width: 100%;" data-select2-id="1"
+                        tabindex="-1" aria-hidden="true">
+                    </select>
+                </div>
+            </div>
+            <!-- /.box-body -->
+            <div class="box-footer">
                 <button id="btn" type="submit" class="btn btn-default pull-right">조회</button>
+            </div>
+            <!-- /.box-footer-->
         </div>
-    </div>
-    
-    
+
+        <!--주식차트-->
+        <div class="box collapsed-box">
+            <div class="box-header with-border">
+                <h3 class="box-title">주식차트</h3>
+                <div class="box-tools pull-right">
+                    <!-- Collapse Button -->
+                    <button type="button" class="btn btn-box-tool" data-widget="collapse">
+                        <i class="fa fa-plus"></i>
+                    </button>
+                </div>
+                <!-- /.box-tools -->
+            </div>
+            <div class="box-body">
+                <div id="container" style="height: 400px; min-width: 310px"></div>
+            </div>
+        </div>
+
+        <!--단건입력-->
+        <div class="box">
+            <div class="box-header with-border">
+                <h3 class="box-title">조회 결과</h3>
+                <div class="box-tools pull-right">
+                    <!-- Collapse Button -->
+                    <button type="button" class="btn btn-box-tool" data-widget="collapse">
+                        <i class="fa fa-minus"></i>
+                    </button>
+                </div>
+                <!-- /.box-tools -->
+            </div>
+            <div class="box-body">
+                <table id="myTable" class="table">
+                    <thead>
+                        <tr>
+                            <th>일자</th>
+                            <th>현재가</th>
+                            <th>시작가</th>
+                            <th>고가</th>
+                            <th>저가</th>
+                            <th>볼륨량</th>
+                            <th>Vol Signal</th>
+                            <th>Volume Signal</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+        </div>
+    </section>
 </body>
-<!-- 합쳐지고 최소화된 최신 자바스크립트 -->
+<script src="https://code.jquery.com/jquery-3.4.1.min.js"
+    integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+
+<!-- data table -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css">
+<script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+
+<script src="https://use.fontawesome.com/releases/v5.2.0/js/all.js"></script>
+
+<script src="https://code.highcharts.com/stock/highstock.js"></script>
+<script src="https://code.highcharts.com/stock/modules/data.js"></script>
+<script src="https://code.highcharts.com/stock/modules/drag-panes.js"></script>
+<script src="https://code.highcharts.com/stock/modules/exporting.js"></script>
+<!-- 필수, SheetJS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.14.3/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.10/js/select2.min.js"></script>
+
+<script type="text/javascript">
+    var wb = null;
+
+    function excelExport(target) {
+        excelExportCommon(target, handleExcelDataAll);
+    }
+
+    function excelExportCommon(target, callback) {
+        var input = target;
+        var reader = new FileReader();
+        reader.onload = function () {
+            wb = null;
+            $('#bondType').val(null);
+            var fileData = reader.result;
+            wb = XLSX.read(fileData, {type: 'binary'});
+            var sheetNameList = wb.SheetNames; // 시트 이름 목록 가져오기
+            // console.log( sheetNameList );
+            sheetNameList.forEach(function (iter, index) {
+                console.log(index + ": " + iter);
+                var option = new Option(iter, iter, true, true);
+                $('#bondType').append(option).trigger('change');
+            });
+            callback(target);
+        };
+        reader.readAsBinaryString(input.files[0]);
+    }
+
+    function handleExcelDataAll(target) {
+        alert('엑셀 파일을 읽었습니다.');
+    }
+
+    $(function () {
+        $('.select2').select2();
+        /*$('#bondType').on('change', function (event) {
+            if(wb){
+                var sheet = wb.Sheets[this.value]; // 첫번째 시트
+                $('#displayExcelTitle').html( this.value);
+                $("#displayExcelHtml").html(JSON.stringify(XLSX.utils.sheet_to_json (sheet, {header:1, range:2})));
+            }
+            console.log('end');
+        });*/
+
+        $('#btn').on('click', function (event) {
+
+
+            if (wb) {
+                var bontType = document.getElementById('bondType');
+                var sheet = wb.Sheets[bontType.value]; // 첫번째 시트
+
+                var data = [], ohlc=[], volume=[], // set the allowed units for data grouping
+                    groupingUnits = [ [
+                        'week',                         // unit name
+                        [1]                             // allowed multiples
+                    ], [
+                        'month',
+                        [1, 2, 3, 4, 6]
+                    ] ];
+                //$('#displayExcelTitle').html( bontType.value);
+                //$("#displayExcelHtml").html(JSON.stringify(XLSX.utils.sheet_to_json (sheet, {header:1, range:2})));
+
+                let xlsData = XLSX.utils.sheet_to_json(sheet, {header: 1, range: 2});
+
+                xlsData.forEach(function (val) {
+                    if (val.length === 0) return true;
+                    data.push([
+                        getJsDateFromExcel(val[0]).toISOString().slice(0,10),
+                        parseFloat(val[1]),
+                        parseFloat(val[2]),
+                        parseFloat(val[3]),
+                        parseFloat(val[4]),
+                        parseInt(val[5]),
+                        parseInt(val[16]),
+                        parseInt(val[17])
+                    ]);
+                    ohlc.push([
+                        getJsDateFromExcel(val[0]).getTime(), // the date
+                        parseFloat(val[2]), // open
+                        parseFloat(val[3]), // high
+                        parseFloat(val[4]), // low
+                        parseFloat(val[1])  // close
+                    ]);
+
+                    volume.push([
+                        getJsDateFromExcel(val[0]).getTime(), // the date
+                        parseInt  (val[5]) // the volume
+                    ]);
+                });
+
+                console.log(data.length);
+                ohlc.reverse();
+                volume.reverse();
+
+                let datatable = $('#myTable').dataTable().api();
+                datatable.clear();
+                datatable.rows.add(data);
+                datatable.draw();
+
+
+                // create the chart
+                Highcharts.stockChart('container', {
+
+                    rangeSelector: {
+                        selected: 1
+                    },
+
+                    title: {
+                        text: bontType.value + ' Historical'
+                    },
+
+                    yAxis: [{
+                        labels: {
+                            align: 'right',
+                            x: -3
+                        },
+                        title: {
+                            text: 'OHLC'
+                        },
+                        height: '60%',
+                        lineWidth: 2,
+                        resize: {
+                            enabled: true
+                        }
+                    }, {
+                        labels: {
+                            align: 'right',
+                            x: -3
+                        },
+                        title: {
+                            text: 'Volume'
+                        },
+                        top: '65%',
+                        height: '35%',
+                        offset: 0,
+                        lineWidth: 2
+                    }],
+
+                    tooltip: {
+                        split: true
+                    },
+
+                    series: [{
+                        type: 'candlestick',
+                        name: 'KS',
+                        id: 'KS',
+                        data: ohlc,
+                        dataGrouping: {
+                            units: groupingUnits
+                        }
+                    }, {
+                        type: 'column',
+                        name: 'Volume',
+                        data: volume,
+                        yAxis: 1,
+                        dataGrouping: {
+                            units: groupingUnits
+                        }
+                    }]
+                });
+            }
+        });
+
+        $('#myTable').DataTable({
+            "columns": [
+                {className: "text-center"},
+                {className: "text-right" },
+                {className: "text-right" },
+                {className: "text-right" },
+                {className: "text-right" },
+                {className: "text-right" , render: $.fn.dataTable.render.number(',', '.')},
+                {className: "text-center" },
+                {className: "text-center" }
+            ],
+            "order": [ [0, "desc"] ],
+            'paging': true,
+            'lengthChange': false,
+            'searching': false,
+            'ordering': true,
+            'info': true,
+            'autoWidth': false,
+            "pageLength": 20
+        });
+    });
+
+    // Convert Excel dates into JS date objects
+    //
+    // @param excelDate {Number}
+    // @return {Date}
+    function getJsDateFromExcel(excelDate) {
+
+        // JavaScript dates can be constructed by passing milliseconds
+        // since the Unix epoch (January 1, 1970) example: new Date(12312512312);
+
+        // 1. Subtract number of days between Jan 1, 1900 and Jan 1, 1970, plus 1 (Google "excel leap year bug")
+        // 2. Convert to milliseconds.
+
+        return (new Date((excelDate - (25567 + 2)) * 86400 * 1000));
+
+    }
+</script>
 </html>
