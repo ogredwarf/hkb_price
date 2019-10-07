@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ko">
+
+<head>
+    <meta charset="utf-8">
+    <title>HTML5 기본 구성</title>
+    <meta name="author" content="webskills.kr">
+    <meta name="description" content="hkb_excel_import">
+    <meta name="keywords" content="HTML, CSS, XML, XHTML, JavaScript">
+    <!--[if lt IE 9]>
+	<script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <!-- 합쳐지고 최소화된 최신 CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.10/css/select2.min.css" rel="stylesheet" />
+    <!-- Theme style -->
+    <link rel="stylesheet" href="dist/css/AdminLTE.min.css">
+    <link rel="stylesheet" href="dist/css/skins/_all-skins.css">
+</head>
+<body>
+    <div class="container">
+            <div id="container" style="height: 400px; min-width: 310px"></div>
+    </div>
+</body>
+
+
+<script src="https://code.highcharts.com/stock/highstock.js"></script>
+<script src="https://code.highcharts.com/stock/modules/data.js"></script>
+<script src="https://code.highcharts.com/stock/modules/exporting.js"></script>
+<script type="text/JavaScript">
+    Highcharts.getJSON('https://cdn.jsdelivr.net/gh/highcharts/highcharts@v7.0.0/samples/data/new-intraday.json', function (data) {
+    
+        // create the chart
+        Highcharts.stockChart('container', {
+    
+    
+            title: {
+                text: 'AAPL stock price by minute'
+            },
+    
+            rangeSelector: {
+                buttons: [{
+                    type: 'hour',
+                    count: 1,
+                    text: '1h'
+                }, {
+                    type: 'day',
+                    count: 1,
+                    text: '1D'
+                }, {
+                    type: 'all',
+                    count: 1,
+                    text: 'All'
+                }],
+                selected: 1,
+                inputEnabled: false
+            },
+    
+            series: [{
+                name: 'AAPL',
+                type: 'candlestick',
+                data: data,
+                tooltip: {
+                    valueDecimals: 2
+                }
+            }]
+        });
+    });
+</script>
