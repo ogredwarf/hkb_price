@@ -37,6 +37,10 @@
                     <label for="excelFile">파일</label>
                     <input type="file" class="form-control-file" id="excelFile" accept=".xlsx" />
                 </div>
+                <div class="form-group">
+                    <label>양식 다운로드</label><br />
+                    <a href="Price_Tracker_ver6.xlsx"> 양식 다운로드 </a>
+                </div>
             </div>
             <!-- /.box-body -->
             <div class="box-footer">
@@ -83,7 +87,7 @@
         </div>
 
         <!--주식차트-->
-        <div class="box collapsed-box">
+        <div class="box  step3">
             <div class="box-header with-border">
                 <h3 class="box-title">주식차트</h3>
                 <div class="box-tools pull-right">
@@ -151,38 +155,34 @@
 <script src="https://code.highcharts.com/stock/modules/data.js"></script>
 <script src="https://code.highcharts.com/stock/modules/drag-panes.js"></script>
 <script src="https://code.highcharts.com/stock/modules/exporting.js"></script>
+<script src="https://code.highcharts.com/stock/modules/series-label.js"></script>
 <!-- 필수, SheetJS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.14.3/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.10/js/select2.min.js"></script>
 
 
 <script type="text/javascript">
+    var chart, wb;
     $(function () {
         /* select2 */
         $('.select2').select2();
+        chart = initChart('container', 'TEST');
         $('#btn').on('click', function (event) {
-
             if (wb) {
                 var bondType = document.getElementById('bondType');
                 var sheet = wb.Sheets[bondType.value]; // 첫번째 시트
 
-                var data = [], ohlc=[], volume=[], // set the allowed units for data grouping
-                    groupingUnits = [ [
-                        'week',                         // unit name
-                        [1]                             // allowed multiples
-                    ], [
-                        'month',
-                        [1, 2, 3, 4, 6]
-                    ] ];
-                //$('#displayExcelTitle').html( bondType.value);
-                //$("#displayExcelHtml").html(JSON.stringify(XLSX.utils.sheet_to_json (sheet, {header:1, range:2})));
-
-                let xlsData = XLSX.utils.sheet_to_json(sheet, {header: 1, range: 2});
+                var data = [], ohlc = [], signalVol = [], signalVolume=[];
+                
+                let xlsData = XLSX.utils.sheet_to_json(sheet, {
+                    header: 1,
+                    range: 2
+                });
 
                 xlsData.forEach(function (val) {
                     if (val.length === 0) return true;
                     data.push([
-                        getJsDateFromExcel(val[0]).toISOString().slice(0,10),
+                        getJsDateFromExcel(val[0]).toISOString().slice(0, 10),
                         parseFloat(val[1]),
                         parseFloat(val[2]),
                         parseFloat(val[3]),
@@ -196,85 +196,31 @@
                         parseFloat(val[2]), // open
                         parseFloat(val[3]), // high
                         parseFloat(val[4]), // low
-                        parseFloat(val[1])  // close
+                        parseFloat(val[1]) // close
                     ]);
 
-                    volume.push([
-                        getJsDateFromExcel(val[0]).getTime(), // the date
-                        parseInt  (val[5]) // the volume
-                    ]);
+                    if( val && val[16] != 0 ){
+                        signalVol.push([
+                            getJsDateFromExcel(val[0]).getTime()
+                            /* , val[16] == 1 ? '매수' : '매도' */
+                        ]);
+                    }                    
                 });
-
-                console.log(data.length);
                 ohlc.reverse();
-                volume.reverse();
+
+                chart.series[0].update({
+                    data : ohlc
+                });
+                chart.series[1].update({
+                    data : signalVol,
+                    title: 'SIG'
+                });
 
                 let datatable = $('#myTable').dataTable().api();
                 datatable.clear();
                 datatable.rows.add(data);
                 datatable.draw();
 
-
-                // create the chart
-                Highcharts.stockChart('container', {
-
-                    rangeSelector: {
-                        selected: 1
-                    },
-
-                    title: {
-                        text: bondType.value + ' Historical'
-                    },
-
-                    yAxis: [{
-                        labels: {
-                            align: 'right',
-                            x: -3
-                        },
-                        title: {
-                            text: 'OHLC'
-                        },
-                        height: '60%',
-                        lineWidth: 2,
-                        resize: {
-                            enabled: true
-                        }
-                    }, {
-                        labels: {
-                            align: 'right',
-                            x: -3
-                        },
-                        title: {
-                            text: 'Volume'
-                        },
-                        top: '65%',
-                        height: '35%',
-                        offset: 0,
-                        lineWidth: 2
-                    }],
-
-                    tooltip: {
-                        split: true
-                    },
-
-                    series: [{
-                        type: 'candlestick',
-                        name: bondType.value,
-                        id: bondType.value,
-                        data: ohlc,
-                        dataGrouping: {
-                            units: groupingUnits
-                        }
-                    }, {
-                        type: 'column',
-                        name: 'Volume',
-                        data: volume,
-                        yAxis: 1,
-                        dataGrouping: {
-                            units: groupingUnits
-                        }
-                    }]
-                });
             }
         });
 
@@ -282,15 +228,20 @@
         $('#myTable').DataTable({
             "columns": [
                 {className: "text-center"},
-                {className: "text-right" },
-                {className: "text-right" },
-                {className: "text-right" },
-                {className: "text-right" },
-                {className: "text-right" , render: $.fn.dataTable.render.number(',', '.')},
-                {className: "text-center" },
-                {className: "text-center" }
+                {className: "text-right"},
+                {className: "text-right"},
+                {className: "text-right"},
+                {className: "text-right"},
+                {
+                    className: "text-right",
+                    render: $.fn.dataTable.render.number(',', '.')
+                },
+                {className: "text-center"},
+                {className: "text-center"}
             ],
-            "order": [ [0, "desc"] ],
+            "order": [
+                [0, "desc"]
+            ],
             'paging': true,
             'lengthChange': false,
             'searching': false,
@@ -302,38 +253,72 @@
     });
 
     // file select Event 
-    $('#excelFile').on('change', function(){
+    $('#excelFile').on('change', function () {
         let fileList = this.files;
         $('#bondType').val(null);
         wb = null;
-            
+
         let reader = new FileReader();
         reader.onload = function () {
             alert('파일 읽기를 시작합니다.');
             var fileData = reader.result;
-            wb = XLSX.read(fileData, {type: 'binary'});
+            wb = XLSX.read(fileData, {
+                type: 'binary'
+            });
             var sheetNameList = wb.SheetNames; // 시트 이름 목록 가져오기
-            
-            appendOptionFn( $('#bondType'), sheetNameList );
+
+            appendOptionFn($('#bondType'), sheetNameList);
             alert('파일 읽기가 끝났습니다.');
         };
         reader.readAsBinaryString(this.files[0]);
     });
 
     // 대상에 option을 추가합니다. 
-    function appendOptionFn( target, options ){
-        if( !options || options.length == 0) return;
-        options.forEach( function( val ){
-            var option = new Option( val, val, true, true );
+    function appendOptionFn(target, options) {
+        if (!options || options.length == 0) return;
+        options.forEach(function (val) {
+            var option = new Option(val, val, true, true);
             target.append(option).trigger('change');
         });
-        target.val( options[0] ).trigger('change');
+        target.val(options[0]).trigger('change');
     }
 
     // Excel Date to Js Date (1970 -> 1900)
     function getJsDateFromExcel(excelDate) {
         return (new Date((excelDate - (25567 + 2)) * 86400 * 1000));
     }
-</script>
-</html>
 
+    // init chart
+    function initChart(id, title) {
+        // create the chart
+        return Highcharts.stockChart(id, {
+            title: {
+                text: title + ' Historical'
+            },
+
+            rangeSelector: {
+                selected: 1
+            },
+
+            title: {
+                text: bondType.value + ' Historical'
+            },
+
+            series: [{
+                name: title,
+                type: 'candlestick',
+                id : 'historical',
+                tooltip: {
+                    valueDecimals: 2
+                }
+            }, {
+                type: 'flags',
+                name: 'Flags on series',
+                onSeries: 'historical',
+                shape: 'squarepin'
+            }]
+        });
+    }
+</script>
+
+</html>
