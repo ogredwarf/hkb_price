@@ -16,6 +16,7 @@
     <!-- Theme style -->
     <link rel="stylesheet" href="dist/css/AdminLTE.min.css">
     <link rel="stylesheet" href="dist/css/skins/_all-skins.css">
+    <link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
@@ -134,7 +135,7 @@
         </div>
 
     </section>
-
+    <div id="cover-spin"></div>
 </body>
 
 <!-- 가져온 스크립트 -->
@@ -172,7 +173,7 @@
                 var bondType = document.getElementById('bondType');
                 var sheet = wb.Sheets[bondType.value]; // 첫번째 시트
 
-                var data = [], ohlc = [], signalVol = [], signalVolume=[];
+                var data = [], ohlc = [], sigVol_b = [], sigVol_s=[];
                 
                 let xlsData = XLSX.utils.sheet_to_json(sheet, {
                     header: 1,
@@ -199,11 +200,18 @@
                         parseFloat(val[1]) // close
                     ]);
 
-                    if( val && val[16] != 0 ){
-                        signalVol.push([
-                            getJsDateFromExcel(val[0]).getTime()
-                            /* , val[16] == 1 ? '매수' : '매도' */
-                        ]);
+                    if( val && val[16] != 0){
+                        if(val[16] == 1){
+                            sigVol_b.push({
+                                x: getJsDateFromExcel(val[0]).getTime(),
+                                text: '매수'    
+                            });
+                        }else {
+                            sigVol_s.push({
+                                x: getJsDateFromExcel(val[0]).getTime(),
+                                text: '매도'
+                            });
+                        }
                     }                    
                 });
                 ohlc.reverse();
@@ -212,8 +220,12 @@
                     data : ohlc
                 });
                 chart.series[1].update({
-                    data : signalVol,
-                    title: 'SIG'
+                    data : sigVol_b,
+                    title: 'BUY'
+                });
+                chart.series[2].update({
+                    data : sigVol_s,
+                    title: 'SELL'
                 });
 
                 let datatable = $('#myTable').dataTable().api();
@@ -254,13 +266,14 @@
 
     // file select Event 
     $('#excelFile').on('change', function () {
+        $('#cover-spin').show();
         let fileList = this.files;
         $('#bondType').val(null);
         wb = null;
 
         let reader = new FileReader();
         reader.onload = function () {
-            alert('파일 읽기를 시작합니다.');
+            
             var fileData = reader.result;
             wb = XLSX.read(fileData, {
                 type: 'binary'
@@ -268,7 +281,7 @@
             var sheetNameList = wb.SheetNames; // 시트 이름 목록 가져오기
 
             appendOptionFn($('#bondType'), sheetNameList);
-            alert('파일 읽기가 끝났습니다.');
+            $('#cover-spin').hide();
         };
         reader.readAsBinaryString(this.files[0]);
     });
@@ -313,9 +326,17 @@
                 }
             }, {
                 type: 'flags',
-                name: 'Flags on series',
+                name: '매수신호',
                 onSeries: 'historical',
-                shape: 'squarepin'
+                shape: 'circlepin',
+                fillColor: '#C0392B'
+            }, {
+                type: 'flags',
+                name: '매도신호',
+                onSeries: 'historical',
+                shape: 'squarepin',
+                fillColor: '#2980B9',
+                y: 20
             }]
         });
     }
